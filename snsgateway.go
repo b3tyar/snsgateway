@@ -4,6 +4,7 @@ import (
 	"flag"
 	"fmt"
 	"io"
+	"io/ioutil"
 	"log"
 	"net/http"
 	"os"
@@ -61,7 +62,7 @@ func sendMessage(w http.ResponseWriter, r *http.Request, snsarn string, arn stri
 		}
 		resp, error := svc.Publish(params)
 		if error != nil {
-			fmt.Println("Publish failed", error)
+			Warning.Println("Publish failed", error)
 		}
 		executions += 1
 		w.Write([]byte(fmt.Sprintf("%v", resp)))
@@ -100,7 +101,7 @@ func createResetTicker() {
 	ticker := time.NewTicker(10 * time.Second)
 	go func() {
 		for t := range ticker.C {
-			fmt.Println("Tick at", t, executions)
+			Trace.Println("Tick at", t, executions)
 			executions = 0
 		}
 	}()
@@ -108,6 +109,7 @@ func createResetTicker() {
 
 func main() {
 
+	Init(ioutil.Discard, os.Stdout, os.Stdout, os.Stderr)
 	var arn string
 	var externalID string
 	var region string
@@ -130,7 +132,7 @@ func main() {
 	flag.Parse()
 
 	if snsarn == "" || region == "" {
-		fmt.Println("Please supply the mandatory parameters, ARN and region", snsarn, region)
+		Error.Println("Please supply the mandatory parameters, snsarn and region", snsarn, region)
 		os.Exit(1)
 	}
 	createResetTicker()
