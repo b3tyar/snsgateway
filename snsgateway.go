@@ -55,6 +55,11 @@ func sendMessage(w http.ResponseWriter, r *http.Request, snsarn string, arn stri
 
 	if executions < 1 {
 		Info.Println("Message sent. Number of executions: %d. SNS ARN: %s, Region: %s, ExternalID:%s", executions+1, snsarn, arn, region, externalID)
+		body, err := ioutil.ReadAll(r.Body)
+		if err != nil {
+			log.Printf("Error reading body: %v", err)
+		}
+		fmt.Println(fmt.Sprintf("%v", body))
 		svc := sns.New(sess, &conf)
 		params := &sns.PublishInput{
 			Message:  aws.String("message"),
