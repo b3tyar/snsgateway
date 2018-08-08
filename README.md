@@ -1,5 +1,7 @@
 TODO
-- pass data as POST param
+- ~~pass data as POST param~~
 - ~~proper logging~~ 
 - sanity/perf test
 - ~~add the params as env variables to the container~~ 
+- create JSON mode to process JSON body
+- make the processing bit a module that can be changed as part of the config
