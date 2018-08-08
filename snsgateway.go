@@ -48,22 +48,20 @@ func Init(
 		log.Ldate|log.Ltime|log.Lshortfile)
 }
 
-func sendMessage(w http.ResponseWriter, r *http.Request, snsarn string, arn string, externalID string, region string) {
+func sendMessage(w http.ResponseWriter, r *http.Request, snsarn string, arn string, externalID string, region string, maxMessagesPerMinute int) {
 
 	keys, ok := r.URL.Query()["key"]
-        var key string
-        if !ok || len(keys[0]) < 1 {
-            key = ""
-        } else {
-        key = keys[0]
-        }
-	
+	var key string
+	if !ok || len(keys[0]) < 1 {
+		key = ""
+	} else {
+		key = keys[0]
+	}
+
 	sess := session.Must(session.NewSession())
 	conf := createConfig(arn, externalID, region, sess)
 
-	if executions < 21 {
-		Info.Println("Message sent. Number of executions: %d. SNS ARN: %s, Region: %s, ExternalID:%s", executions+1, snsarn, arn, region, externalID)
-		
+	if executions < maxMessagesPerMinute {
 		svc := sns.New(sess, &conf)
 		params := &sns.PublishInput{
 			Message:  aws.String(key),
@@ -71,12 +69,13 @@ func sendMessage(w http.ResponseWriter, r *http.Request, snsarn string, arn stri
 		}
 		resp, error := svc.Publish(params)
 		if error != nil {
-			Warning.Println("Publish failed", error)
+			Error.Println("Publish failed", error)
+		} else {
+			Info.Println("Message sent. Number of executions: %d. SNS ARN: %s, Region: %s, response: %s", executions+1, snsarn, arn, region, resp)
 		}
 		executions += 1
-		w.Write([]byte(fmt.Sprintf("%v", resp)))
 	} else {
-		w.Write([]byte(fmt.Sprintf("Message not sent. Number of executions > ", executions)))
+		Warning.Println("Message not sent, because the per minute limit has been reached. Number of executions > %d", executions-1)
 	}
 }
 
@@ -99,13 +98,6 @@ func createConfig(arn string, externalID string, region string, sess *session.Se
 	return conf
 }
 
-func getEnv(key, fallback string) string {
-	if value, ok := os.LookupEnv(key); ok {
-		return value
-	}
-	return fallback
-}
-
 func createResetTicker() {
 	ticker := time.NewTicker(1 * time.Minute)
 	go func() {
@@ -119,10 +111,13 @@ func createResetTicker() {
 func main() {
 
 	Init(ioutil.Discard, os.Stdout, os.Stdout, os.Stderr)
+
 	var arn string
 	var externalID string
 	var region string
 	var snsarn string
+	var maxMessagesPerMinute int
+	var port int
 	const (
 		defaultARN    = ""
 		arnUsage      = "The ARN of the role you need to assume"
@@ -132,24 +127,29 @@ func main() {
 		regionUsage   = "The region of the SNS topic (mandatory)"
 		defaultSNSARN = ""
 		SNSARNUsage   = "The ARN of the receiver SNS topic (mandatory)"
+		MMPMUsage     = "The maximum number of messages allowed per minute"
+		defaultMMPM   = 20
+		portUsage     = "The listening port for the application"
+		defaultPort   = 8080
 	)
-
 	flag.StringVar(&arn, "arn", defaultARN, arnUsage)
 	flag.StringVar(&externalID, "extid", defaultExtID, extIDUsage)
 	flag.StringVar(&region, "region", defaultRegion, regionUsage)
 	flag.StringVar(&snsarn, "snsarn", defaultSNSARN, SNSARNUsage)
+	flag.IntVar(&maxMessagesPerMinute, "maxMessagesPerMinute", defaultMMPM, MMPMUsage)
+	flag.IntVar(&port, "port", defaultPort, portUsage)
 	flag.Parse()
-
 	if snsarn == "" || region == "" {
 		Error.Println("Please supply the mandatory parameters, snsarn and region", snsarn, region)
 		os.Exit(1)
 	}
+
 	createResetTicker()
 	http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
-		sendMessage(w, r, snsarn, arn, externalID, region)
+		sendMessage(w, r, snsarn, arn, externalID, region, maxMessagesPerMinute)
 	})
 
-	if err := http.ListenAndServe(":8080", nil); err != nil {
+	if err := http.ListenAndServe(fmt.Sprintf(":%d", port), nil); err != nil {
 		panic(err)
 	}
 }
