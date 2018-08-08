@@ -50,12 +50,20 @@ func Init(
 
 func sendMessage(w http.ResponseWriter, r *http.Request, snsarn string, arn string, externalID string, region string, maxMessagesPerMinute int) {
 
-	keys, ok := r.URL.Query()["key"]
-	var key string
-	if !ok || len(keys[0]) < 1 {
-		key = ""
+	params, ok := r.URL.Query()["message"]
+	var message string
+	if !ok || len(params[0]) < 1 {
+		message = ""
 	} else {
-		key = keys[0]
+		message = params[0]
+	}
+
+	params, ok = r.URL.Query()["subject"]
+	var subject string
+	if !ok || len(params[0]) < 1 {
+		subject = ""
+	} else {
+		subject = params[0]
 	}
 
 	sess := session.Must(session.NewSession())
@@ -64,7 +72,8 @@ func sendMessage(w http.ResponseWriter, r *http.Request, snsarn string, arn stri
 	if executions < maxMessagesPerMinute {
 		svc := sns.New(sess, &conf)
 		params := &sns.PublishInput{
-			Message:  aws.String(key),
+			Message:  aws.String(message),
+			Subject:  aws.String(subject),
 			TopicArn: aws.String(snsarn),
 		}
 		resp, error := svc.Publish(params)
