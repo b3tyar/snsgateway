@@ -50,19 +50,23 @@ func Init(
 
 func sendMessage(w http.ResponseWriter, r *http.Request, snsarn string, arn string, externalID string, region string) {
 
+	keys, ok := r.URL.Query()["key"]
+        var key string
+        if !ok || len(keys[0]) < 1 {
+            key = ""
+        } else {
+        key = keys[0]
+        }
+	
 	sess := session.Must(session.NewSession())
 	conf := createConfig(arn, externalID, region, sess)
 
-	if executions < 1 {
+	if executions < 21 {
 		Info.Println("Message sent. Number of executions: %d. SNS ARN: %s, Region: %s, ExternalID:%s", executions+1, snsarn, arn, region, externalID)
-		body, err := ioutil.ReadAll(r.Body)
-		if err != nil {
-			log.Printf("Error reading body: %v", err)
-		}
-		fmt.Println(fmt.Sprintf("%v", body))
+		
 		svc := sns.New(sess, &conf)
 		params := &sns.PublishInput{
-			Message:  aws.String("message"),
+			Message:  aws.String(key),
 			TopicArn: aws.String(snsarn),
 		}
 		resp, error := svc.Publish(params)
@@ -103,7 +107,7 @@ func getEnv(key, fallback string) string {
 }
 
 func createResetTicker() {
-	ticker := time.NewTicker(10 * time.Second)
+	ticker := time.NewTicker(1 * time.Minute)
 	go func() {
 		for t := range ticker.C {
 			Trace.Println("Tick at", t, executions)
