@@ -61,7 +61,7 @@ func sendMessage(w http.ResponseWriter, r *http.Request, snsarn string, arn stri
 	params, ok = r.URL.Query()["subject"]
 	var subject string
 	if !ok || len(params[0]) < 1 {
-		subject = ""
+		subject = "FromSNSGateway"
 	} else {
 		subject = params[0]
 	}
