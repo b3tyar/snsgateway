@@ -50,21 +50,29 @@ func Init(
 
 func sendMessage(w http.ResponseWriter, r *http.Request, snsarn string, arn string, externalID string, region string, maxMessagesPerMinute int) {
 
-	params, ok := r.URL.Query()["message"]
-	var message string
-	if !ok || len(params[0]) < 1 {
-		message = ""
-	} else {
-		message = params[0]
-	}
+        params, ok := r.URL.Query()["subject"]
+        var subject string
+        var message string
 
-	params, ok = r.URL.Query()["subject"]
-	var subject string
-	if !ok || len(params[0]) < 1 {
-		subject = "FromSNSGateway"
-	} else {
-		subject = params[0]
-	}
+        if !ok || len(params[0]) < 1 {
+                subject = "FromSNSGateway"
+        } else {
+                subject = params[0]
+        }
+
+
+        if b, err := ioutil.ReadAll(r.Body); err == nil {
+            message = string(b)
+        } 
+
+        if len(message) < 1 {
+	    params, ok := r.URL.Query()["message"]
+	    if !ok || len(params[0]) < 1 {
+    		message = ""
+    	    } else {
+		message = params[0]
+	    }
+        }
 
 	sess := session.Must(session.NewSession())
 	conf := createConfig(arn, externalID, region, sess)
