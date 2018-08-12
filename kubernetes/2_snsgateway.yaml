@@ -1,7 +1,7 @@
 apiVersion: v1
 kind: Namespace
 metadata:
-  name: default
+  name: monitoring
   
 apiVersion: extensions/v1beta1
 kind: Deployment
@@ -9,7 +9,7 @@ metadata:
   name: snsgateway
   labels:
     k8s-app: snsgateway-service
-  namespace: default
+  namespace: monitoring
 spec:
   replicas: 1
   selector:
