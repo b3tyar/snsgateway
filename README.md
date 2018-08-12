@@ -1,6 +1,7 @@
 TODO
 
 - Add default params to the container, so the limit and AssumeRole could be changed via arguments
+- Add argument to favor the parameter over the POST data for the "message"
 
 Example curls
 
