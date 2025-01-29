@@ -1,5 +1,7 @@
 #### SNS Gateway
 
+
+
 This solution is created to allow applications without SNS support, to send messages with webhooks, using either parameters or a simple request body. The solution can use IAM roles to authenticate to AWS and it can limit the number of messages sent per minute.
 
 ### Quick start for testing
