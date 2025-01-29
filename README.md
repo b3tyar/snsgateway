@@ -7,6 +7,7 @@ Clone the repo and run the snsgateway.go. Example:
 
 `go run snsgateway.go --snsarn arn:aws:sns:yourregion:youraccountnumber:topicname --region yourregion`
 
+
 ### Prerequisites
 ```
   yum install go
